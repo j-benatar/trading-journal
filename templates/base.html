@@ -1,0 +1,60 @@
+<!DOCTYPE html>
+<!--
+  base.html — The master layout template
+  All other pages (index, add_trade, edit_trade) "extend" this template.
+  This means they share the same <head>, navbar, and footer automatically.
+  Only the content inside the "content" block changes per page.
+-->
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>{% block title %}Trading Journal{% endblock %}</title>
+
+  <!-- Our custom dark-mode stylesheet -->
+  <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}" />
+
+  <!--
+    Chart.js — a free JavaScript library that draws charts in the browser.
+    We load it from a CDN (Content Delivery Network) so we don't need to
+    download anything separately.
+  -->
+  <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.3/dist/chart.umd.min.js"></script>
+</head>
+<body>
+
+  <!-- ===== Navigation bar ===== -->
+  <nav class="navbar">
+    <div class="nav-brand">📈 Trading Journal</div>
+    <div class="nav-links">
+      <a href="{{ url_for('index') }}"     class="nav-link">All Trades</a>
+      <a href="{{ url_for('add_trade') }}" class="nav-link nav-link-accent">+ Add Trade</a>
+    </div>
+  </nav>
+
+  <!-- ===== Flash messages ===== -->
+  <!--
+    Flash messages are one-time notices (e.g. "Trade saved!") that Flask
+    stores for just the next page load, then discards automatically.
+  -->
+  <div class="flash-container">
+    {% with messages = get_flashed_messages(with_categories=true) %}
+      {% if messages %}
+        {% for category, message in messages %}
+          <div class="flash flash-{{ category }}">{{ message }}</div>
+        {% endfor %}
+      {% endif %}
+    {% endwith %}
+  </div>
+
+  <!-- ===== Page content ===== -->
+  <!--
+    Child templates fill in this block with their own HTML.
+    Everything outside this block (navbar, flash messages) is inherited.
+  -->
+  <main class="main-content">
+    {% block content %}{% endblock %}
+  </main>
+
+</body>
+</html>

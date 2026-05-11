@@ -1,0 +1,506 @@
+/* =============================================================================
+   style.css — Dark-mode stylesheet for Trading Journal
+   =============================================================================
+   CSS custom properties (variables) are defined at the top in :root so
+   every color is in one place and easy to change.
+   ============================================================================= */
+
+:root {
+  /* Background layers */
+  --bg          : #0d0d12;
+  --surface     : #16161f;
+  --surface2    : #1e1e2a;
+  --surface3    : #252533;
+
+  /* Borders */
+  --border      : #2a2a3a;
+  --border-soft : #222230;
+
+  /* Text */
+  --text        : #ddddf0;
+  --text-muted  : #7777a0;
+  --text-dim    : #444460;
+
+  /* Semantic colors */
+  --green       : #22c55e;
+  --green-dim   : rgba(34, 197, 94, 0.15);
+  --red         : #ef4444;
+  --red-dim     : rgba(239, 68, 68, 0.15);
+  --accent      : #6366f1;
+  --accent-hover: #4f46e5;
+  --blue-dim    : rgba(99, 102, 241, 0.15);
+  --warning     : #f59e0b;
+
+  /* Layout */
+  --radius      : 8px;
+  --radius-sm   : 5px;
+  --max-width   : 1400px;
+}
+
+/* =============================================================================
+   Reset & base
+   ============================================================================= */
+
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+body {
+  background : var(--bg);
+  color      : var(--text);
+  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+  font-size  : 14px;
+  line-height: 1.6;
+  min-height : 100vh;
+}
+
+a { color: var(--accent); text-decoration: none; }
+a:hover { text-decoration: underline; }
+
+/* =============================================================================
+   Navbar
+   ============================================================================= */
+
+.navbar {
+  display        : flex;
+  align-items    : center;
+  justify-content: space-between;
+  padding        : 0 1.5rem;
+  height         : 56px;
+  background     : var(--surface);
+  border-bottom  : 1px solid var(--border);
+  position       : sticky;
+  top            : 0;
+  z-index        : 100;
+}
+
+.nav-brand {
+  font-size  : 1.05rem;
+  font-weight: 600;
+  color      : var(--text);
+  letter-spacing: 0.02em;
+}
+
+.nav-links { display: flex; gap: 0.5rem; align-items: center; }
+
+.nav-link {
+  color      : var(--text-muted);
+  padding    : 0.4rem 0.75rem;
+  border-radius: var(--radius-sm);
+  font-size  : 0.875rem;
+  transition : color 0.15s, background 0.15s;
+}
+.nav-link:hover { color: var(--text); background: var(--surface2); text-decoration: none; }
+.nav-link-accent {
+  background: var(--accent);
+  color     : #fff !important;
+}
+.nav-link-accent:hover { background: var(--accent-hover); }
+
+/* =============================================================================
+   Flash messages
+   ============================================================================= */
+
+.flash-container { padding: 0 1.5rem; margin-top: 0.75rem; }
+
+.flash {
+  padding      : 0.65rem 1rem;
+  border-radius: var(--radius-sm);
+  font-size    : 0.875rem;
+  margin-bottom: 0.5rem;
+  border       : 1px solid transparent;
+}
+.flash-success { background: var(--green-dim);  border-color: var(--green); color: var(--green); }
+.flash-error   { background: var(--red-dim);    border-color: var(--red);   color: var(--red);   }
+.flash-info    { background: var(--blue-dim);   border-color: var(--accent);color: var(--accent);}
+
+/* =============================================================================
+   Main layout
+   ============================================================================= */
+
+.main-content {
+  max-width : var(--max-width);
+  margin    : 0 auto;
+  padding   : 1.5rem;
+}
+
+.section { margin-bottom: 2.5rem; }
+
+.section-title {
+  font-size    : 1.1rem;
+  font-weight  : 600;
+  color        : var(--text);
+  margin-bottom: 1rem;
+}
+.section-note {
+  font-size  : 0.8rem;
+  color      : var(--text-muted);
+  font-weight: 400;
+}
+
+/* =============================================================================
+   Buttons
+   ============================================================================= */
+
+.btn {
+  display      : inline-flex;
+  align-items  : center;
+  gap          : 0.3rem;
+  padding      : 0.45rem 0.9rem;
+  border-radius: var(--radius-sm);
+  font-size    : 0.875rem;
+  font-weight  : 500;
+  cursor       : pointer;
+  border       : 1px solid transparent;
+  transition   : background 0.15s, border-color 0.15s, color 0.15s;
+  white-space  : nowrap;
+  text-decoration: none;
+}
+.btn:hover { text-decoration: none; }
+
+.btn-accent  { background: var(--accent);  color: #fff; }
+.btn-accent:hover { background: var(--accent-hover); }
+
+.btn-ghost {
+  background  : transparent;
+  color       : var(--text-muted);
+  border-color: var(--border);
+}
+.btn-ghost:hover { background: var(--surface2); color: var(--text); }
+
+.btn-danger { background: var(--red-dim); color: var(--red); border-color: var(--red); }
+.btn-danger:hover { background: var(--red); color: #fff; }
+
+.btn-sm  { padding: 0.3rem 0.6rem; font-size: 0.8rem; }
+.btn-lg  { padding: 0.6rem 1.25rem; font-size: 0.95rem; }
+
+/* =============================================================================
+   Filter form
+   ============================================================================= */
+
+.filter-form {
+  display    : flex;
+  flex-wrap  : wrap;
+  gap        : 1rem;
+  align-items: flex-end;
+  background : var(--surface);
+  border     : 1px solid var(--border);
+  border-radius: var(--radius);
+  padding    : 1rem 1.25rem;
+}
+
+.filter-group {
+  display       : flex;
+  flex-direction: column;
+  gap           : 0.3rem;
+  min-width     : 140px;
+}
+
+.filter-group label { font-size: 0.8rem; color: var(--text-muted); }
+
+.filter-actions { display: flex; gap: 0.5rem; align-items: flex-end; }
+
+/* =============================================================================
+   Form inputs (shared by filter form and trade form)
+   ============================================================================= */
+
+input[type="text"],
+input[type="number"],
+input[type="date"],
+input[type="time"],
+select,
+textarea {
+  background   : var(--surface2);
+  border       : 1px solid var(--border);
+  border-radius: var(--radius-sm);
+  color        : var(--text);
+  font-size    : 0.875rem;
+  padding      : 0.5rem 0.75rem;
+  width        : 100%;
+  outline      : none;
+  transition   : border-color 0.15s;
+  font-family  : inherit;
+}
+
+input:focus, select:focus, textarea:focus {
+  border-color: var(--accent);
+}
+
+/* Fix browser dark-mode autofill coloring */
+input:-webkit-autofill,
+input:-webkit-autofill:hover,
+input:-webkit-autofill:focus {
+  -webkit-text-fill-color: var(--text);
+  -webkit-box-shadow: 0 0 0px 1000px var(--surface2) inset;
+  transition: background-color 5000s ease-in-out 0s;
+}
+
+/* Make the date/time picker icon visible on dark backgrounds */
+input[type="date"]::-webkit-calendar-picker-indicator,
+input[type="time"]::-webkit-calendar-picker-indicator {
+  filter: invert(0.7);
+  cursor: pointer;
+}
+
+select option { background: var(--surface2); }
+textarea { resize: vertical; min-height: 80px; }
+
+/* =============================================================================
+   Stats panels
+   ============================================================================= */
+
+.panels-container {
+  display  : grid;
+  gap      : 1rem;
+  grid-template-columns: repeat(auto-fit, minmax(340px, 1fr));
+}
+
+.stats-panel {
+  background   : var(--surface);
+  border       : 1px solid var(--border);
+  border-radius: var(--radius);
+  padding      : 1.25rem;
+}
+
+/* Subtle left-border accent colors to distinguish the three panels */
+.panel-all   { border-left: 3px solid var(--accent); }
+.panel-long  { border-left: 3px solid var(--green);  }
+.panel-short { border-left: 3px solid var(--red);    }
+
+.stats-title {
+  font-size    : 0.85rem;
+  font-weight  : 600;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  color        : var(--text-muted);
+  margin-bottom: 1rem;
+}
+
+.stats-grid {
+  display              : grid;
+  grid-template-columns: repeat(auto-fill, minmax(130px, 1fr));
+  gap                  : 0.6rem;
+}
+
+.stat-card {
+  background   : var(--surface2);
+  border-radius: var(--radius-sm);
+  padding      : 0.65rem 0.75rem;
+}
+
+.stat-label {
+  font-size : 0.72rem;
+  color     : var(--text-muted);
+  margin-bottom: 0.2rem;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+}
+
+.stat-value {
+  font-size  : 1rem;
+  font-weight: 600;
+  color      : var(--text);
+}
+
+/* =============================================================================
+   Equity curve chart
+   ============================================================================= */
+
+.chart-container {
+  background   : var(--surface);
+  border       : 1px solid var(--border);
+  border-radius: var(--radius);
+  padding      : 1.25rem;
+  position     : relative;
+  height       : 320px;
+}
+
+.chart-container canvas { max-height: 280px; }
+
+/* =============================================================================
+   Trades table
+   ============================================================================= */
+
+.table-header {
+  display        : flex;
+  justify-content: space-between;
+  align-items    : center;
+  margin-bottom  : 0.75rem;
+}
+
+.table-wrapper {
+  overflow-x   : auto;
+  border-radius: var(--radius);
+  border       : 1px solid var(--border);
+}
+
+.trades-table {
+  width          : 100%;
+  border-collapse: collapse;
+  white-space    : nowrap;
+  font-size      : 0.84rem;
+}
+
+.trades-table thead tr {
+  background: var(--surface2);
+}
+
+.trades-table th {
+  padding      : 0.65rem 0.75rem;
+  text-align   : left;
+  font-weight  : 600;
+  font-size    : 0.75rem;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  color        : var(--text-muted);
+  border-bottom: 1px solid var(--border);
+  white-space  : nowrap;
+}
+
+.trades-table td {
+  padding      : 0.6rem 0.75rem;
+  border-bottom: 1px solid var(--border-soft);
+  color        : var(--text);
+}
+
+.trades-table tbody tr:last-child td { border-bottom: none; }
+
+/* Subtle row highlight on hover */
+.trades-table tbody tr:hover { background: var(--surface2); }
+
+/* Very subtle win/loss row tinting */
+.row-win  { background: rgba(34, 197, 94, 0.03); }
+.row-loss { background: rgba(239, 68, 68, 0.03); }
+
+/* Muted secondary columns */
+.td-muted { color: var(--text-muted); }
+.td-notes { max-width: 200px; overflow: hidden; text-overflow: ellipsis; }
+
+/* Bold for net PnL column */
+.bold { font-weight: 600; }
+
+/* Action column buttons */
+.td-actions { display: flex; gap: 0.4rem; align-items: center; }
+
+/* =============================================================================
+   Color utility classes (used on stat values and table cells)
+   ============================================================================= */
+
+.positive { color: var(--green); }
+.negative { color: var(--red);   }
+
+/* =============================================================================
+   Direction badges
+   ============================================================================= */
+
+.badge {
+  display      : inline-block;
+  padding      : 0.15rem 0.5rem;
+  border-radius: 3px;
+  font-size    : 0.72rem;
+  font-weight  : 700;
+  letter-spacing: 0.04em;
+}
+.badge-long  { background: var(--green-dim); color: var(--green); }
+.badge-short { background: var(--red-dim);   color: var(--red);   }
+
+/* =============================================================================
+   Empty state
+   ============================================================================= */
+
+.empty-state {
+  text-align   : center;
+  padding      : 3rem 1rem;
+  color        : var(--text-muted);
+  background   : var(--surface);
+  border       : 1px solid var(--border);
+  border-radius: var(--radius);
+}
+.empty-state p + p { margin-top: 0.5rem; }
+
+/* =============================================================================
+   Trade form (add / edit)
+   ============================================================================= */
+
+.trade-form {
+  background   : var(--surface);
+  border       : 1px solid var(--border);
+  border-radius: var(--radius);
+  padding      : 1.75rem;
+  max-width    : 900px;
+}
+
+.form-row {
+  display  : flex;
+  flex-wrap: wrap;
+  gap      : 1rem;
+  margin-bottom: 1.25rem;
+}
+
+.form-group {
+  display       : flex;
+  flex-direction: column;
+  gap           : 0.35rem;
+  flex          : 1;
+  min-width     : 180px;
+}
+
+/* A full-width form group (used for the notes textarea) */
+.form-group-full { flex-basis: 100%; }
+
+.form-group label {
+  font-size  : 0.8rem;
+  font-weight: 500;
+  color      : var(--text-muted);
+}
+
+.required { color: var(--red); }
+
+.field-hint {
+  display    : block;
+  font-size  : 0.73rem;
+  color      : var(--text-dim);
+  font-weight: 400;
+  margin-top : 0.1rem;
+}
+
+/* Live PnL preview box */
+.pnl-preview-group { min-width: 220px; }
+
+.pnl-preview {
+  display      : flex;
+  gap          : 1.5rem;
+  align-items  : center;
+  background   : var(--surface2);
+  border       : 1px solid var(--border);
+  border-radius: var(--radius-sm);
+  padding      : 0.65rem 0.9rem;
+  font-weight  : 600;
+  font-size    : 0.95rem;
+  color        : var(--text-muted);
+  height       : 40px;    /* match input height */
+  margin-top   : 2px;
+}
+
+/* Color the preview when we can calculate a result */
+.preview-win  { border-color: var(--green); background: var(--green-dim);  color: var(--green); }
+.preview-loss { border-color: var(--red);   background: var(--red-dim);    color: var(--red);   }
+
+/* Form action buttons at the bottom */
+.form-actions {
+  display   : flex;
+  gap       : 0.75rem;
+  margin-top: 0.5rem;
+}
+
+/* =============================================================================
+   Responsive tweaks
+   ============================================================================= */
+
+@media (max-width: 700px) {
+  .navbar       { padding: 0 1rem; }
+  .main-content { padding: 1rem; }
+  .filter-form  { flex-direction: column; }
+  .panels-container { grid-template-columns: 1fr; }
+  .trades-table th,
+  .trades-table td  { padding: 0.5rem; }
+  .trade-form   { padding: 1rem; }
+}

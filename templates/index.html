@@ -1,0 +1,327 @@
+{% extends "base.html" %}
+<!--
+  index.html — The main dashboard page
+  Inherits the layout from base.html and fills in the content block.
+  Shows: filters, stats panels, equity curve chart, and trades table.
+-->
+
+{% block title %}Dashboard — Trading Journal{% endblock %}
+
+{% block content %}
+
+<!-- =========================================================
+     FILTER BAR
+     A simple form that reloads the page with filter parameters
+     added to the URL (e.g. /?direction=long&date_from=2026-05-011)
+     ========================================================= -->
+<section class="section">
+  <form method="GET" action="{{ url_for('index') }}" class="filter-form">
+    <div class="filter-group">
+      <label for="direction">Direction</label>
+      <select name="direction" id="direction">
+        <option value="">All</option>
+        <option value="long"  {% if direction_filter == 'long'  %}selected{% endif %}>Long</option>
+        <option value="short" {% if direction_filter == 'short' %}selected{% endif %}>Short</option>
+      </select>
+    </div>
+
+    <div class="filter-group">
+      <label for="date_from">From</label>
+      <input type="date" name="date_from" id="date_from"
+             value="{{ date_from }}" />
+    </div>
+
+    <div class="filter-group">
+      <label for="date_to">To</label>
+      <input type="date" name="date_to" id="date_to"
+             value="{{ date_to }}" />
+    </div>
+
+    <div class="filter-actions">
+      <button type="submit" class="btn btn-accent">Filter</button>
+      <a href="{{ url_for('index') }}" class="btn btn-ghost">Reset</a>
+    </div>
+  </form>
+</section>
+
+
+<!-- =========================================================
+     STATS PANELS
+     Three panels: All Trades, Longs Only, Shorts Only.
+     stats_all / stats_long / stats_short are passed in from app.py.
+
+     We use a Jinja2 macro so we don't have to repeat the same
+     HTML three times. A macro is like a reusable snippet of HTML.
+     ========================================================= -->
+
+{% macro stats_panel(label, stats, color_class) %}
+<div class="stats-panel {{ color_class }}">
+  <h3 class="stats-title">{{ label }}</h3>
+  <div class="stats-grid">
+
+    <div class="stat-card">
+      <div class="stat-label">Total Trades</div>
+      <div class="stat-value">{{ stats.total_trades }}</div>
+    </div>
+
+    <div class="stat-card">
+      <div class="stat-label">Win Rate</div>
+      <div class="stat-value">{{ stats.win_rate }}%</div>
+    </div>
+
+    <div class="stat-card">
+      <div class="stat-label">Net PnL</div>
+      <div class="stat-value {{ 'positive' if stats.net_pnl >= 0 else 'negative' }}">
+        ${{ "%.2f"|format(stats.net_pnl) }}
+      </div>
+    </div>
+
+    <div class="stat-card">
+      <div class="stat-label">Gross Profit</div>
+      <div class="stat-value positive">${{ "%.2f"|format(stats.gross_profit) }}</div>
+    </div>
+
+    <div class="stat-card">
+      <div class="stat-label">Gross Loss</div>
+      <div class="stat-value negative">${{ "%.2f"|format(stats.gross_loss) }}</div>
+    </div>
+
+    <div class="stat-card">
+      <div class="stat-label">Avg Win</div>
+      <div class="stat-value positive">${{ "%.2f"|format(stats.avg_win) }}</div>
+    </div>
+
+    <div class="stat-card">
+      <div class="stat-label">Avg Loss</div>
+      <div class="stat-value negative">${{ "%.2f"|format(stats.avg_loss) }}</div>
+    </div>
+
+    <div class="stat-card">
+      <div class="stat-label">Profit Factor</div>
+      <div class="stat-value">{{ stats.profit_factor }}</div>
+    </div>
+
+    <div class="stat-card">
+      <div class="stat-label">Largest Winner</div>
+      <div class="stat-value positive">${{ "%.2f"|format(stats.largest_winner) }}</div>
+    </div>
+
+    <div class="stat-card">
+      <div class="stat-label">Largest Loser</div>
+      <div class="stat-value negative">${{ "%.2f"|format(stats.largest_loser) }}</div>
+    </div>
+
+  </div>
+</div>
+{% endmacro %}
+
+<section class="section">
+  <h2 class="section-title">Performance Summary <span class="section-note">(all trades, unfiltered)</span></h2>
+  <div class="panels-container">
+    {{ stats_panel("All Trades",  stats_all,   "panel-all")   }}
+    {{ stats_panel("Longs Only",  stats_long,  "panel-long")  }}
+    {{ stats_panel("Shorts Only", stats_short, "panel-short") }}
+  </div>
+</section>
+
+
+<!-- =========================================================
+     EQUITY CURVE CHART
+     Chart.js draws this line chart using data passed from app.py.
+     equity_labels and equity_values are JSON strings.
+     ========================================================= -->
+<section class="section">
+  <h2 class="section-title">Equity Curve <span class="section-note">(cumulative net PnL)</span></h2>
+  <div class="chart-container">
+    <canvas id="equityChart"></canvas>
+  </div>
+</section>
+
+<script>
+// equity_labels and equity_values come from app.py via Jinja2 template variables.
+// The | tojson filter converts them safely to JavaScript values.
+const labels = {{ equity_labels | safe }};
+const values = {{ equity_values | safe }};
+
+// If there are no trades yet, skip drawing the chart
+if (labels.length > 0) {
+
+  // Color the line green if we're profitable, red if not
+  const finalValue = values[values.length - 1];
+  const lineColor  = finalValue >= 0 ? '#22c55e' : '#ef4444';
+
+  // Build a gradient fill below the line
+  const ctx = document.getElementById('equityChart').getContext('2d');
+  const gradient = ctx.createLinearGradient(0, 0, 0, 300);
+  gradient.addColorStop(0, finalValue >= 0 ? 'rgba(34,197,94,0.3)' : 'rgba(239,68,68,0.3)');
+  gradient.addColorStop(1, 'rgba(0,0,0,0)');
+
+  new Chart(ctx, {
+    type: 'line',
+    data: {
+      labels: labels,
+      datasets: [{
+        label       : 'Cumulative Net PnL ($)',
+        data        : values,
+        borderColor : lineColor,
+        backgroundColor: gradient,
+        borderWidth : 2,
+        pointRadius : labels.length > 60 ? 0 : 3,   // hide dots when crowded
+        pointHoverRadius: 5,
+        tension     : 0.1,   // slight curve on the line
+        fill        : true,
+      }]
+    },
+    options: {
+      responsive : true,
+      maintainAspectRatio: true,
+      interaction: { mode: 'index', intersect: false },
+      plugins: {
+        legend: { labels: { color: '#e2e2ee' } },
+        tooltip: {
+          backgroundColor: '#22222e',
+          borderColor    : '#2e2e3e',
+          borderWidth    : 1,
+          titleColor     : '#e2e2ee',
+          bodyColor      : '#8888aa',
+          callbacks: {
+            // Show "$" prefix in the tooltip
+            label: ctx => ` $${ctx.parsed.y.toFixed(2)}`
+          }
+        }
+      },
+      scales: {
+        x: {
+          ticks : { color: '#8888aa', maxTicksLimit: 12, maxRotation: 30 },
+          grid  : { color: '#2e2e3e' },
+        },
+        y: {
+          ticks : {
+            color: '#8888aa',
+            callback: val => '$' + val.toFixed(0)
+          },
+          grid  : { color: '#2e2e3e' },
+          // Draw a zero line in white so it's easy to see break-even
+          afterDataLimits(scale) {
+            scale.max = Math.max(scale.max, 1);
+            scale.min = Math.min(scale.min, -1);
+          }
+        }
+      }
+    }
+  });
+}
+</script>
+
+
+<!-- =========================================================
+     TRADES TABLE
+     Shows trades matching the current filters.
+     Direction, gross PnL, and net PnL are color-coded.
+     ========================================================= -->
+<section class="section">
+  <div class="table-header">
+    <h2 class="section-title" style="margin-bottom:0">
+      Trade Log
+      <span class="section-note">({{ trades|length }} trade{{ 's' if trades|length != 1 else '' }} shown)</span>
+    </h2>
+    <a href="{{ url_for('add_trade') }}" class="btn btn-accent">+ Add Trade</a>
+  </div>
+
+  {% if trades %}
+  <div class="table-wrapper">
+    <table class="trades-table">
+      <thead>
+        <tr>
+          <th>#</th>
+          <th>Date</th>
+          <th>Time</th>
+          <th>Symbol</th>
+          <th>Direction</th>
+          <th>Entry</th>
+          <th>Exit</th>
+          <th>Qty</th>
+          <th>Pt Value</th>
+          <th>Commission</th>
+          <th>Gross PnL</th>
+          <th>Net PnL</th>
+          <th>Bars</th>
+          <th>Exit Reason</th>
+          <th>Version</th>
+          <th>Notes</th>
+          <th>Actions</th>
+        </tr>
+      </thead>
+      <tbody>
+        {% for trade in trades %}
+        <tr class="{{ 'row-win' if trade.net_pnl > 0 else ('row-loss' if trade.net_pnl < 0 else '') }}">
+          <td class="td-muted">{{ loop.index }}</td>
+          <td>{{ trade.trade_date }}</td>
+          <td class="td-muted">{{ trade.trade_time }}</td>
+          <td>{{ trade.symbol }}</td>
+
+          <!-- Direction badge: green for long, red for short -->
+          <td>
+            <span class="badge {{ 'badge-long' if trade.direction == 'long' else 'badge-short' }}">
+              {{ trade.direction | upper }}
+            </span>
+          </td>
+
+          <td>{{ "%.2f"|format(trade.entry_price) }}</td>
+          <td>{{ "%.2f"|format(trade.exit_price) }}</td>
+          <td>{{ trade.contracts }}</td>
+          <td class="td-muted">${{ "%.2f"|format(trade.point_value) }}</td>
+          <td class="td-muted">${{ "%.2f"|format(trade.commission) }}</td>
+
+          <!-- Gross PnL: green if positive, red if negative -->
+          <td class="{{ 'positive' if trade.gross_pnl >= 0 else 'negative' }}">
+            ${{ "%.2f"|format(trade.gross_pnl) }}
+          </td>
+
+          <!-- Net PnL: same coloring -->
+          <td class="bold {{ 'positive' if trade.net_pnl >= 0 else 'negative' }}">
+            ${{ "%.2f"|format(trade.net_pnl) }}
+          </td>
+
+          <td class="td-muted">{{ trade.bars_in_trade if trade.bars_in_trade else '—' }}</td>
+          <td class="td-muted">{{ trade.exit_reason if trade.exit_reason else '—' }}</td>
+          <td class="td-muted">{{ trade.strategy_version if trade.strategy_version else '—' }}</td>
+          <td class="td-notes td-muted">{{ trade.notes if trade.notes else '—' }}</td>
+
+          <!-- Edit and Delete buttons -->
+          <td class="td-actions">
+            <a href="{{ url_for('edit_trade', trade_id=trade.id) }}" class="btn btn-sm btn-ghost">Edit</a>
+
+            <!--
+              Delete uses a tiny form with POST so we don't accidentally
+              delete trades by clicking a link.
+              The "onclick" asks for confirmation before submitting.
+            -->
+            <form method="POST"
+                  action="{{ url_for('delete_trade', trade_id=trade.id) }}"
+                  style="display:inline"
+                  onsubmit="return confirm('Delete this trade?')">
+              <button type="submit" class="btn btn-sm btn-danger">Delete</button>
+            </form>
+          </td>
+        </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+
+  {% else %}
+  <!-- Empty state: shown when there are no trades (or none match the filter) -->
+  <div class="empty-state">
+    <p>No trades found.</p>
+    {% if direction_filter or date_from or date_to %}
+      <p><a href="{{ url_for('index') }}">Clear filters</a> to see all trades.</p>
+    {% else %}
+      <p><a href="{{ url_for('add_trade') }}">Add your first trade →</a></p>
+    {% endif %}
+  </div>
+  {% endif %}
+
+</section>
+
+{% endblock %}

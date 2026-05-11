@@ -1,0 +1,189 @@
+{% extends "base.html" %}
+<!--
+  edit_trade.html — The "Edit Trade" form page
+  Almost identical to add_trade.html, but the fields are pre-filled with
+  the existing trade's values, passed in from app.py as the 'trade' variable.
+-->
+
+{% block title %}Edit Trade #{{ trade.id }} — Trading Journal{% endblock %}
+
+{% block content %}
+<section class="section">
+  <h2 class="section-title">Edit Trade <span class="section-note">#{{ trade.id }}</span></h2>
+  <p class="section-note" style="margin-bottom: 1.5rem;">
+    Gross PnL and Net PnL will be recalculated automatically when you save.
+  </p>
+
+  <form method="POST" action="{{ url_for('edit_trade', trade_id=trade.id) }}" class="trade-form">
+
+    <!-- ---- Row 1: Date, Time, Symbol ---- -->
+    <div class="form-row">
+      <div class="form-group">
+        <label for="trade_date">Trade Date <span class="required">*</span></label>
+        <!--
+          value="{{ trade.trade_date }}" pre-fills the field with the saved value.
+          The trade variable is a Python dictionary passed from app.py.
+        -->
+        <input type="date" id="trade_date" name="trade_date"
+               value="{{ trade.trade_date }}" required />
+      </div>
+      <div class="form-group">
+        <label for="trade_time">Trade Time <span class="required">*</span></label>
+        <input type="time" id="trade_time" name="trade_time"
+               value="{{ trade.trade_time }}" required />
+      </div>
+      <div class="form-group">
+        <label for="symbol">Symbol <span class="required">*</span></label>
+        <input type="text" id="symbol" name="symbol"
+               value="{{ trade.symbol }}" required maxlength="20" />
+      </div>
+    </div>
+
+    <!-- ---- Row 2: Direction, Entry, Exit, Contracts ---- -->
+    <div class="form-row">
+      <div class="form-group">
+        <label for="direction">Direction <span class="required">*</span></label>
+        <select id="direction" name="direction" required onchange="calcPreview()">
+          <!--
+            The 'selected' attribute is added to whichever option matches
+            the saved direction value.
+          -->
+          <option value="long"  {% if trade.direction == 'long'  %}selected{% endif %}>Long</option>
+          <option value="short" {% if trade.direction == 'short' %}selected{% endif %}>Short</option>
+        </select>
+      </div>
+      <div class="form-group">
+        <label for="entry_price">Entry Price <span class="required">*</span></label>
+        <input type="number" id="entry_price" name="entry_price"
+               step="0.01" min="0" required
+               value="{{ trade.entry_price }}"
+               oninput="calcPreview()" />
+      </div>
+      <div class="form-group">
+        <label for="exit_price">Exit Price <span class="required">*</span></label>
+        <input type="number" id="exit_price" name="exit_price"
+               step="0.01" min="0" required
+               value="{{ trade.exit_price }}"
+               oninput="calcPreview()" />
+      </div>
+      <div class="form-group">
+        <label for="contracts">Contracts <span class="required">*</span></label>
+        <input type="number" id="contracts" name="contracts"
+               min="1" required
+               value="{{ trade.contracts }}"
+               oninput="calcPreview()" />
+      </div>
+    </div>
+
+    <!-- ---- Row 3: Point Value, Commission, Live PnL preview ---- -->
+    <div class="form-row">
+      <div class="form-group">
+        <label for="point_value">
+          Point Value ($) <span class="required">*</span>
+          <span class="field-hint">$ value of a 1-unit price move per contract/share</span>
+        </label>
+        <input type="number" id="point_value" name="point_value"
+               step="0.01" min="0" required
+               value="{{ trade.point_value }}"
+               oninput="calcPreview()" />
+      </div>
+
+      <div class="form-group">
+        <label for="commission">
+          Commission ($) <span class="required">*</span>
+          <span class="field-hint">Total round-trip commission for this trade</span>
+        </label>
+        <input type="number" id="commission" name="commission"
+               step="0.01" min="0" required
+               value="{{ trade.commission }}"
+               oninput="calcPreview()" />
+      </div>
+
+      <div class="form-group pnl-preview-group">
+        <label>Live PnL Preview</label>
+        <div class="pnl-preview" id="pnl-preview">
+          <!-- Populated immediately by the script at the bottom of this page -->
+          <span id="preview-gross">Gross: —</span>
+          <span id="preview-net">Net: —</span>
+        </div>
+      </div>
+    </div>
+
+    <!-- ---- Row 4: Bars, Exit reason, Strategy version ---- -->
+    <div class="form-row">
+      <div class="form-group">
+        <label for="bars_in_trade">Bars in Trade</label>
+        <input type="number" id="bars_in_trade" name="bars_in_trade"
+               min="1"
+               value="{{ trade.bars_in_trade if trade.bars_in_trade else '' }}" />
+      </div>
+      <div class="form-group">
+        <label for="exit_reason">Exit Reason</label>
+        <input type="text" id="exit_reason" name="exit_reason"
+               maxlength="100"
+               value="{{ trade.exit_reason if trade.exit_reason else '' }}" />
+      </div>
+      <div class="form-group">
+        <label for="strategy_version">Strategy Version</label>
+        <input type="text" id="strategy_version" name="strategy_version"
+               maxlength="50"
+               value="{{ trade.strategy_version if trade.strategy_version else '' }}" />
+      </div>
+    </div>
+
+    <!-- ---- Row 5: Notes ---- -->
+    <div class="form-row">
+      <div class="form-group form-group-full">
+        <label for="notes">Notes</label>
+        <textarea id="notes" name="notes" rows="3">{{ trade.notes if trade.notes else '' }}</textarea>
+      </div>
+    </div>
+
+    <!-- ---- Submit / Cancel ---- -->
+    <div class="form-actions">
+      <button type="submit" class="btn btn-accent btn-lg">Update Trade</button>
+      <a href="{{ url_for('index') }}" class="btn btn-ghost btn-lg">Cancel</a>
+    </div>
+
+  </form>
+</section>
+
+<script>
+function calcPreview() {
+  const direction   = document.getElementById('direction').value;
+  const entry       = parseFloat(document.getElementById('entry_price').value);
+  const exit        = parseFloat(document.getElementById('exit_price').value);
+  const contracts   = parseInt(document.getElementById('contracts').value)  || 1;
+  const pointValue  = parseFloat(document.getElementById('point_value').value) || 0;
+  const commission  = parseFloat(document.getElementById('commission').value) || 0;
+
+  const grossEl = document.getElementById('preview-gross');
+  const netEl   = document.getElementById('preview-net');
+  const box     = document.getElementById('pnl-preview');
+
+  if (isNaN(entry) || isNaN(exit) || pointValue <= 0) {
+    grossEl.textContent = 'Gross: —';
+    netEl.textContent   = 'Net: —';
+    box.className       = 'pnl-preview';
+    return;
+  }
+
+  let gross;
+  if (direction === 'long') {
+    gross = (exit - entry) * contracts * pointValue;
+  } else {
+    gross = (entry - exit) * contracts * pointValue;
+  }
+  const net = gross - commission;
+
+  grossEl.textContent = 'Gross: $' + gross.toFixed(2);
+  netEl.textContent   = 'Net: $'   + net.toFixed(2);
+  box.className = 'pnl-preview ' + (net >= 0 ? 'preview-win' : 'preview-loss');
+}
+
+// Run the preview calculation as soon as the page loads so the box
+// is already filled in with the current saved values.
+window.addEventListener('load', calcPreview);
+</script>
+
+{% endblock %}

@@ -1,0 +1,186 @@
+{% extends "base.html" %}
+<!--
+  add_trade.html — The "Add New Trade" form page
+  Inherits layout from base.html.
+
+  When the user fills in the price fields, a small JavaScript snippet
+  previews the calculated Gross PnL and Net PnL live — before they submit.
+-->
+
+{% block title %}Add Trade — Trading Journal{% endblock %}
+
+{% block content %}
+<section class="section">
+  <h2 class="section-title">Add New Trade</h2>
+  <p class="section-note" style="margin-bottom: 1.5rem;">
+    Gross PnL and Net PnL are calculated automatically from your prices.
+    Point Value is the $ amount a 1-unit price move is worth per contract
+    or share (e.g. MES = $5, ES = $50, MNQ = $2, stocks = $1).
+  </p>
+
+  <form method="POST" action="{{ url_for('add_trade') }}" class="trade-form">
+
+    <!-- ---- Row 1: Date, Time, Symbol ---- -->
+    <div class="form-row">
+      <div class="form-group">
+        <label for="trade_date">Trade Date <span class="required">*</span></label>
+        <input type="date" id="trade_date" name="trade_date"
+               value="{{ today }}" required />
+      </div>
+      <div class="form-group">
+        <label for="trade_time">Trade Time <span class="required">*</span></label>
+        <input type="time" id="trade_time" name="trade_time"
+               value="{{ now_time }}" required />
+      </div>
+      <div class="form-group">
+        <label for="symbol">Symbol <span class="required">*</span></label>
+        <input type="text" id="symbol" name="symbol"
+               value="MES" required maxlength="20" />
+      </div>
+    </div>
+
+    <!-- ---- Row 2: Direction, Entry, Exit, Contracts ---- -->
+    <div class="form-row">
+      <div class="form-group">
+        <label for="direction">Direction <span class="required">*</span></label>
+        <select id="direction" name="direction" required onchange="calcPreview()">
+          <option value="long">Long</option>
+          <option value="short">Short</option>
+        </select>
+      </div>
+      <div class="form-group">
+        <label for="entry_price">Entry Price <span class="required">*</span></label>
+        <input type="number" id="entry_price" name="entry_price"
+               step="0.01" min="0" required placeholder="e.g. 7410.25"
+               oninput="calcPreview()" />
+      </div>
+      <div class="form-group">
+        <label for="exit_price">Exit Price <span class="required">*</span></label>
+        <input type="number" id="exit_price" name="exit_price"
+               step="0.01" min="0" required placeholder="e.g. 7426.75"
+               oninput="calcPreview()" />
+      </div>
+      <div class="form-group">
+        <label for="contracts">Contracts <span class="required">*</span></label>
+        <input type="number" id="contracts" name="contracts"
+               value="1" min="1" required
+               oninput="calcPreview()" />
+      </div>
+    </div>
+
+    <!-- ---- Row 3: Point Value, Commission, Live PnL preview ---- -->
+    <div class="form-row">
+      <div class="form-group">
+        <label for="point_value">
+          Point Value ($) <span class="required">*</span>
+          <span class="field-hint">$ value of a 1-unit price move per contract/share</span>
+        </label>
+        <input type="number" id="point_value" name="point_value"
+               value="5.00" step="0.01" min="0" required
+               oninput="calcPreview()" />
+      </div>
+
+      <div class="form-group">
+        <label for="commission">
+          Commission ($) <span class="required">*</span>
+          <span class="field-hint">Total round-trip commission for this trade</span>
+        </label>
+        <input type="number" id="commission" name="commission"
+               value="0.00" step="0.01" min="0" required
+               oninput="calcPreview()" />
+      </div>
+
+      <!-- Live PnL preview box — updated by calcPreview() JavaScript below -->
+      <div class="form-group pnl-preview-group">
+        <label>Live PnL Preview</label>
+        <div class="pnl-preview" id="pnl-preview">
+          <span id="preview-gross">Gross: —</span>
+          <span id="preview-net">Net: —</span>
+        </div>
+      </div>
+    </div>
+
+    <!-- ---- Row 4: Bars, Exit reason, Strategy version ---- -->
+    <div class="form-row">
+      <div class="form-group">
+        <label for="bars_in_trade">
+          Bars in Trade
+          <span class="field-hint">How many bars/candles the trade lasted</span>
+        </label>
+        <input type="number" id="bars_in_trade" name="bars_in_trade"
+               min="1" placeholder="e.g. 4" />
+      </div>
+      <div class="form-group">
+        <label for="exit_reason">Exit Reason</label>
+        <input type="text" id="exit_reason" name="exit_reason"
+               placeholder="e.g. TP hit, SL hit, bar close" maxlength="100" />
+      </div>
+      <div class="form-group">
+        <label for="strategy_version">Strategy Version</label>
+        <input type="text" id="strategy_version" name="strategy_version"
+               placeholder="e.g. v1.0" maxlength="50" />
+      </div>
+    </div>
+
+    <!-- ---- Row 5: Notes ---- -->
+    <div class="form-row">
+      <div class="form-group form-group-full">
+        <label for="notes">Notes</label>
+        <textarea id="notes" name="notes" rows="3"
+                  placeholder="Optional: market conditions, observations, tags..."></textarea>
+      </div>
+    </div>
+
+    <!-- ---- Submit / Cancel ---- -->
+    <div class="form-actions">
+      <button type="submit" class="btn btn-accent btn-lg">Save Trade</button>
+      <a href="{{ url_for('index') }}" class="btn btn-ghost btn-lg">Cancel</a>
+    </div>
+
+  </form>
+</section>
+
+<!-- =========================================================
+     LIVE PnL PREVIEW — JavaScript
+     Reads the form fields and calculates PnL in the browser
+     so you can see the result before you hit Save.
+     ========================================================= -->
+<script>
+function calcPreview() {
+  const direction   = document.getElementById('direction').value;
+  const entry       = parseFloat(document.getElementById('entry_price').value);
+  const exit        = parseFloat(document.getElementById('exit_price').value);
+  const contracts   = parseInt(document.getElementById('contracts').value)  || 1;
+  const pointValue  = parseFloat(document.getElementById('point_value').value) || 0;
+  const commission  = parseFloat(document.getElementById('commission').value) || 0;
+
+  const grossEl = document.getElementById('preview-gross');
+  const netEl   = document.getElementById('preview-net');
+  const box     = document.getElementById('pnl-preview');
+
+  // Only calculate if all required numbers are present
+  if (isNaN(entry) || isNaN(exit) || pointValue <= 0) {
+    grossEl.textContent = 'Gross: —';
+    netEl.textContent   = 'Net: —';
+    box.className       = 'pnl-preview';
+    return;
+  }
+
+  let gross;
+  if (direction === 'long') {
+    gross = (exit - entry) * contracts * pointValue;
+  } else {
+    gross = (entry - exit) * contracts * pointValue;
+  }
+
+  const net = gross - commission;
+
+  grossEl.textContent = 'Gross: $' + gross.toFixed(2);
+  netEl.textContent   = 'Net: $'   + net.toFixed(2);
+
+  // Color the preview box based on whether the trade is a winner
+  box.className = 'pnl-preview ' + (net >= 0 ? 'preview-win' : 'preview-loss');
+}
+</script>
+
+{% endblock %}
